@@ -44,8 +44,13 @@ export default function Home() {
 
       {/* Hero */}
       <main className="max-w-4xl mx-auto px-6 pt-20 pb-32 text-center">
-        <div className="inline-block bg-emerald-100 text-emerald-700 text-sm font-medium px-4 py-1.5 rounded-full mb-8">
-          ✨ Launching soon — join the waitlist
+        <div className="flex justify-center gap-3 mb-8">
+          <div className="inline-block bg-emerald-100 text-emerald-700 text-sm font-medium px-4 py-1.5 rounded-full">
+            ✨ Launching soon — join the waitlist
+          </div>
+          <a href="/chat" className="inline-block bg-gray-900 text-white text-sm font-medium px-4 py-1.5 rounded-full hover:bg-gray-800 transition-colors">
+            Try the demo →
+          </a>
         </div>
 
         <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 leading-tight mb-6">

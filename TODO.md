@@ -3,10 +3,10 @@
 *Last updated: February 23, 2026*
 
 ## 🔴 Blockers
-- [ ] Confirm gomello.app DNS is live
-- [ ] Waitlist backend — store signups (Supabase or API route)
-- [ ] Terms of Service page
-- [ ] Privacy Policy page
+- [x] Confirm gomello.app DNS is live ✅
+- [x] Waitlist backend — POST /api/waitlist stores to waitlist.json ✅
+- [x] Terms of Service page (/terms) ✅
+- [x] Privacy Policy page (/privacy) ✅
 
 ## 🟡 Business Setup
 - [ ] Affiliate signup: Kiwi.com Tequila API
