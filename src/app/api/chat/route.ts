@@ -20,9 +20,44 @@ const SHORT_ANSWER = /^\s*\S+(\s+\S+){0,2}\s*$/;
 // Known city/country names (common ones)
 const PLACES = /\b(bangkok|tokyo|london|paris|lisbon|barcelona|rome|amsterdam|berlin|prague|budapest|vienna|athens|istanbul|dubai|singapore|bali|phuket|sydney|melbourne|new york|los angeles|miami|cancun|copenhagen|stockholm|gothenburg|oslo|helsinki|reykjavik|marrakech|cairo|cape town|nairobi|zanzibar|maldives|mauritius|sri lanka|vietnam|cambodia|laos|myanmar|philippines|japan|korea|china|india|nepal|morocco|portugal|spain|italy|france|germany|greece|turkey|thailand|indonesia|malaysia|mexico|brazil|colombia|peru|argentina|croatia|montenegro|slovenia|poland|hungary|czech|austria|switzerland|ireland|scotland|iceland|norway|sweden|denmark|finland|estonia|latvia|lithuania|malta|cyprus|egypt|jordan|oman|georgia|armenia|fiji|tahiti|hawaii|alaska|canada|cuba|jamaica|costa rica|panama|ecuador|chile|bolivia|new zealand|seychelles|madagascar|tanzania|kenya|uganda|ethiopia|ghana|senegal|namibia|botswana|zambia|zimbabwe|mozambique|qatar|bahrain|kuwait|abu dhabi|doha|muscat|tbilisi|batumi|dubrovnik|split|kotor|ohrid|sarajevo)\b/i;
 
+// Prompt injection patterns
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?(previous|prior|above|earlier|your)\s+(instructions?|rules?|prompts?|programming)/i,
+  /disregard\s+(all\s+)?(previous|prior|above|earlier|your)/i,
+  /forget\s+(all\s+)?(previous|prior|above|your)\s+(instructions?|rules?|context)/i,
+  /you\s+are\s+now\s+/i,
+  /act\s+as\s+(if\s+you\s+are|a|an|my)\b/i,
+  /pretend\s+(you\s+are|to\s+be|you're)/i,
+  /from\s+now\s+on\s+(you|your|obey|follow|listen)/i,
+  /new\s+(instructions?|rules?|persona|role|mode)/i,
+  /override\s+(your|all|the|previous)/i,
+  /system\s*:?\s*(prompt|message|instruction|override)/i,
+  /\bDAN\b|do\s+anything\s+now/i,
+  /jailbreak|bypass\s+(filter|safety|restriction|guardrail)/i,
+  /\b(obey|comply|follow)\s+(me|my|these|this|all)/i,
+  /i\s+am\s+(your|the)\s+(creator|developer|admin|owner|master|boss|god)/i,
+  /this\s+is\s+an?\s+(emergency|urgent|critical|override)/i,
+  /ignore\s+safety/i,
+  /reveal\s+(your|the)\s+(system|prompt|instructions?|source|code)/i,
+  /show\s+(me\s+)?(your|the)\s+(system|prompt|instructions?|source|rules?)/i,
+  /what\s+are\s+your\s+(instructions?|rules?|system\s+prompt)/i,
+  /repeat\s+(your|the)\s+(system|initial|first|original)\s+(prompt|message|instructions?)/i,
+  /translate\s+(your|the)\s+(system|initial)\s+(prompt|instructions?)/i,
+  /output\s+(your|the)\s+(system|initial|above)\s+(prompt|text|instructions?)/i,
+  /\]\s*\}|<\/?system>|<\/?prompt>/i,  // JSON/XML injection attempts
+  /\bsudo\b|\/bin\/|eval\(|exec\(|import\s+os/i,  // code injection
+];
+
+function isPromptInjection(message: string): boolean {
+  return INJECTION_PATTERNS.some((pattern) => pattern.test(message));
+}
+
 function isTravelRelated(message: string, history: { role: string; content: string }[]): boolean {
   const trimmed = message.trim();
   const lower = trimmed.toLowerCase();
+
+  // Check for prompt injection FIRST
+  if (isPromptInjection(trimmed)) return false;
 
   // Always allow greetings
   if (GREETINGS.test(lower)) return true;
@@ -142,6 +177,14 @@ export async function POST(request: NextRequest) {
 
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    }
+
+    // Guard: block prompt injection attempts
+    if (isPromptInjection(message)) {
+      return NextResponse.json({
+        reply: "Nice try 😄 I'm just a travel planner. Where do you want to go?",
+        flights: null,
+      });
     }
 
     // Guard: reject non-travel messages
