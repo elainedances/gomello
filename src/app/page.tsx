@@ -6,10 +6,30 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: hook up to a real backend/waitlist
-    setSubmitted(true);
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Something went wrong");
+      } else {
+        setSubmitted(true);
+      }
+    } catch {
+      setError("Couldn't connect. Try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -41,7 +61,8 @@ export default function Home() {
 
         {/* Waitlist form */}
         {!submitted ? (
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto mb-16">
+          <div className="max-w-md mx-auto mb-16">
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
             <input
               type="email"
               placeholder="your@email.com"
@@ -52,11 +73,14 @@ export default function Home() {
             />
             <button
               type="submit"
-              className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors shadow-sm cursor-pointer text-base"
+              disabled={loading}
+              className="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-semibold rounded-xl transition-colors shadow-sm cursor-pointer text-base"
             >
-              Join Waitlist
+              {loading ? "Joining..." : "Join Waitlist"}
             </button>
           </form>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          </div>
         ) : (
           <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-6 py-4 max-w-md mx-auto mb-16">
             <p className="text-emerald-700 font-medium">
@@ -135,6 +159,10 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
+        <div className="flex justify-center gap-6 mb-3">
+          <a href="/terms" className="hover:text-gray-600 transition-colors">Terms of Service</a>
+          <a href="/privacy" className="hover:text-gray-600 transition-colors">Privacy Policy</a>
+        </div>
         <p>© 2026 GoMello. Made with honesty.</p>
       </footer>
     </div>
