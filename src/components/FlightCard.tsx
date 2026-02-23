@@ -40,8 +40,13 @@ export default function FlightCard({ flight }: { flight: FlightResult }) {
         </div>
       </div>
 
+      {/* Date */}
+      <div className="px-5 pt-3 text-sm text-gray-500">
+        📅 {flight.departure.date}
+      </div>
+
       {/* Route */}
-      <div className="px-5 py-4 flex items-center gap-4">
+      <div className="px-5 py-3 flex items-center gap-4">
         <div className="text-center">
           <div className="text-xl font-semibold text-gray-900">{flight.departure.time}</div>
           <div className="text-sm font-medium text-gray-600">{flight.departure.airport}</div>

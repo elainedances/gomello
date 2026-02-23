@@ -5,12 +5,30 @@ import Link from "next/link";
 import FlightCard from "@/components/FlightCard";
 import { ChatMessage, FlightResult } from "@/lib/types";
 
+function renderMarkdown(text: string) {
+  return text.split("\n").map((line, i) => {
+    // Bold **text**
+    const parts = line.split(/(\*\*[^*]+\*\*)/g).map((part, j) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={j}>{part.slice(2, -2)}</strong>;
+      }
+      return <span key={j}>{part}</span>;
+    });
+    return (
+      <span key={i}>
+        {i > 0 && <br />}
+        {line === "" ? <br /> : parts}
+      </span>
+    );
+  });
+}
+
 export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "Hey! 👋 Where do you want to go? Just tell me in your own words — like \"flights from Copenhagen to Bangkok in April\" or \"somewhere warm for a week under €500.\"",
+      content: "Hey! 👋 I'm your travel planner. Tell me where you want to go and I'll help you figure out the whole trip — flights, hotels, things to do.\n\nJust say something like \"I want to go to Tokyo for 2 weeks in May\" or \"beach holiday somewhere warm.\"",
       timestamp: Date.now(),
     },
   ]);
@@ -40,10 +58,14 @@ export default function Chat() {
     setLoading(true);
 
     try {
+      const history = messages
+        .filter((m) => m.id !== "welcome")
+        .map((m) => ({ role: m.role, content: m.content }));
+
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, history }),
       });
       const data = await res.json();
 
@@ -100,8 +122,8 @@ export default function Chat() {
               ) : (
                 <div className="flex justify-start">
                   <div className="max-w-[90%]">
-                    <div className="bg-white border border-gray-200 px-4 py-2.5 rounded-2xl rounded-bl-md text-gray-800 text-[15px] shadow-sm">
-                      {msg.content}
+                    <div className="bg-white border border-gray-200 px-4 py-2.5 rounded-2xl rounded-bl-md text-gray-800 text-[15px] shadow-sm whitespace-pre-line">
+                      {renderMarkdown(msg.content)}
                     </div>
                     {msg.flights && (
                       <div className="mt-4 space-y-4">
