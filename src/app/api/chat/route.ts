@@ -8,6 +8,43 @@ interface TripContext {
   duration?: string;
 }
 
+// Travel-related keywords whitelist
+const TRAVEL_WORDS = /\b(flight|fly|flying|airport|airline|plane|ticket|book|booking|trip|travel|vacation|holiday|hotel|hostel|airbnb|stay|accommodation|resort|motel|activit|things to do|sightseeing|tour|temple|museum|beach|mountain|city|country|destination|passport|visa|luggage|baggage|layover|stopover|transit|rental|car hire|transfer|taxi|train|bus|cruise|ferry|backpack|itinerary|budget|cheap|expensive|price|cost|deal|dates?|week|month|january|february|march|april|may|june|july|august|september|october|november|december|summer|winter|spring|autumn|warm|cold|tropical|europe|asia|africa|america|australia|mediterranean|caribbean|islands?|food|restaurant|nightlife|bar|culture|weather|rooftop|market|shopping|spa|bath|pool)\b/i;
+
+// Common greetings
+const GREETINGS = /^(hi|hey|hello|hej|sup|yo|hola|good morning|good evening|thanks|thank you|ok|okay|yes|no|sure|please|cool|great|nice|awesome|perfect)\b/i;
+
+// Short answers (1-3 words) are likely responses to bot questions
+const SHORT_ANSWER = /^\s*\S+(\s+\S+){0,2}\s*$/;
+
+// Known city/country names (common ones)
+const PLACES = /\b(bangkok|tokyo|london|paris|lisbon|barcelona|rome|amsterdam|berlin|prague|budapest|vienna|athens|istanbul|dubai|singapore|bali|phuket|sydney|melbourne|new york|los angeles|miami|cancun|copenhagen|stockholm|gothenburg|oslo|helsinki|reykjavik|marrakech|cairo|cape town|nairobi|zanzibar|maldives|mauritius|sri lanka|vietnam|cambodia|laos|myanmar|philippines|japan|korea|china|india|nepal|morocco|portugal|spain|italy|france|germany|greece|turkey|thailand|indonesia|malaysia|mexico|brazil|colombia|peru|argentina|croatia|montenegro|slovenia|poland|hungary|czech|austria|switzerland|ireland|scotland|iceland|norway|sweden|denmark|finland|estonia|latvia|lithuania|malta|cyprus|egypt|jordan|oman|georgia|armenia|fiji|tahiti|hawaii|alaska|canada|cuba|jamaica|costa rica|panama|ecuador|chile|bolivia|new zealand|seychelles|madagascar|tanzania|kenya|uganda|ethiopia|ghana|senegal|namibia|botswana|zambia|zimbabwe|mozambique|qatar|bahrain|kuwait|abu dhabi|doha|muscat|tbilisi|batumi|dubrovnik|split|kotor|ohrid|sarajevo)\b/i;
+
+function isTravelRelated(message: string, history: { role: string; content: string }[]): boolean {
+  const trimmed = message.trim();
+  const lower = trimmed.toLowerCase();
+
+  // Always allow greetings
+  if (GREETINGS.test(lower)) return true;
+
+  // Allow short answers when the bot asked a question (user is replying, not prompting)
+  if (SHORT_ANSWER.test(trimmed)) {
+    const lastQ = getLastQuestion(history);
+    if (lastQ) return true;
+  }
+
+  // Allow if contains travel keywords
+  if (TRAVEL_WORDS.test(lower)) return true;
+
+  // Allow if mentions a known place
+  if (PLACES.test(lower)) return true;
+
+  // Allow short messages that could be city names (1-3 words, all letters)
+  if (SHORT_ANSWER.test(trimmed) && /^[a-zA-ZÀ-ÿ\s-]+$/.test(trimmed)) return true;
+
+  return false;
+}
+
 // Check what the last assistant message was asking for
 function getLastQuestion(history: { role: string; content: string }[]): string | null {
   for (let i = history.length - 1; i >= 0; i--) {
@@ -105,6 +142,14 @@ export async function POST(request: NextRequest) {
 
     if (!message || typeof message !== "string") {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    }
+
+    // Guard: reject non-travel messages
+    if (!isTravelRelated(message, history)) {
+      return NextResponse.json({
+        reply: "I'm a travel planner — I can help with flights, hotels, and things to do at your destination. 🌍\n\nTell me where you want to go and I'll help plan the trip!",
+        flights: null,
+      });
     }
 
     const lastQuestion = getLastQuestion(history);
